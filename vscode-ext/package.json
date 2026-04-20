@@ -1,0 +1,58 @@
+{
+  "name": "briefbridge",
+  "displayName": "BriefBridge",
+  "description": "Cross-agent session handoff — use @bb in chat to pull sessions from Claude, Copilot, and Codex",
+  "version": "0.1.0",
+  "publisher": "briefbridge",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": [
+    "Chat"
+  ],
+  "extensionKind": ["ui"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "briefbridge.bb",
+        "fullName": "BriefBridge",
+        "name": "bb",
+        "description": "Cross-agent session handoff. Pull context from Claude, Copilot, and Codex sessions.",
+        "isSticky": false,
+        "commands": [
+          {
+            "name": "sessions",
+            "description": "List recent sessions from all providers"
+          },
+          {
+            "name": "inspect",
+            "description": "Show details of a specific session"
+          },
+          {
+            "name": "use",
+            "description": "Generate a handoff block to paste into another agent"
+          },
+          {
+            "name": "pack",
+            "description": "Generate a full handoff pack for a session"
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src",
+    "package": "npx @vscode/vsce package --out briefbridge.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.93.0",
+    "typescript": "^5.5.0",
+    "@vscode/vsce": "^3.0.0"
+  }
+}

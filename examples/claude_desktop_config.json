@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "briefbridge": {
+      "command": "bb-mcp",
+      "args": [],
+      "env": {}
+    }
+  }
+}

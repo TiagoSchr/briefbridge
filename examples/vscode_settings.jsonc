@@ -1,0 +1,25 @@
+# VS Code settings.json fragment for GitHub Copilot + BriefBridge MCP
+#
+# Add this to your VS Code settings.json (global or workspace):
+{
+  "github.copilot.chat.experimental.mcp": {
+    "servers": {
+      "briefbridge": {
+        "command": "bb-mcp",
+        "args": [],
+        "type": "stdio"
+      }
+    }
+  },
+
+  # Optional: customize bb CLI path if not on PATH
+  "briefbridge.bbPath": "bb",
+  "briefbridge.defaultProvider": "any",
+  "briefbridge.defaultHours": 24
+}
+
+# After configuring MCP, the @bb chat participant will call the MCP server.
+# The VS Code extension (@bb) still works independently via CLI.
+#
+# To install via CLI:
+#   bb wrapper install --client copilot

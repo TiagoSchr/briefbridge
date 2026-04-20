@@ -1,0 +1,27 @@
+# ~/.codex/config.yaml — BriefBridge MCP configuration for Codex
+#
+# Add this to your Codex config to enable MCP tool access:
+
+mcp_servers:
+  - name: briefbridge
+    command: bb-mcp
+    args: []
+    description: "BriefBridge — cross-agent session handoff"
+
+# After adding this, Codex can call:
+#   bb_sessions_list
+#   bb_session_inspect
+#   bb_session_pack
+#   bb_session_use
+#   bb_session_search
+#
+# To install slash commands and skill instructions:
+#   bb wrapper install --client codex
+#
+# This adds to ~/.codex/:
+#   commands/bb-sessions.md
+#   commands/bb-inspect.md
+#   commands/bb-pack.md
+#   commands/bb-use.md
+#   commands/bb-search.md
+#   instructions.md (bb skill section appended)
