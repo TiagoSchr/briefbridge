@@ -2,109 +2,117 @@
 
 # 🌉 BriefBridge
 
-**Cross-agent session handoff — continue your work in any AI coding tool without losing context.**
+**Handoff entre agentes — continue seu trabalho em qualquer ferramenta de IA sem perder o contexto.**
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-142%20passing-brightgreen)](https://github.com/TiagoSchr/briefbridge)
-[![PyPI](https://img.shields.io/badge/install-pip%20install%20briefbridge-orange?logo=pypi&logoColor=white)](https://github.com/TiagoSchr/briefbridge)
+[![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)](LICENSE)
+[![Testes](https://img.shields.io/badge/testes-142%20passando-brightgreen)](https://github.com/TiagoSchr/briefbridge)
 
-*Leia em [Português](README.pt.md)*
+*Read in [English](README.en.md)*
 
 </div>
 
 ---
 
-BriefBridge reads local session data from **GitHub Copilot Chat**, **Claude Code**, and **Codex**, extracts structured context — objectives, files touched, errors, decisions, pending items — and makes it available as a paste-ready handoff block you can drop into any other tool.
+O BriefBridge lê os dados de sessão locais do **GitHub Copilot Chat**, **Claude Code** e **Codex**, extrai contexto estruturado — objetivos, arquivos editados, erros, decisões, pendências — e gera um bloco pronto para colar em qualquer outra ferramenta.
 
-**All clients share the same MCP backend. Only the interface changes.**
-
----
-
-## Why does this exist?
-
-When you switch AI coding tools mid-task, you lose all context. You have to re-explain the objective, re-list changed files, and re-describe every error you hit. BriefBridge automates that transfer.
-
-- 🔍 **Reads** local session files from each tool (no API calls, no data leaving your machine)
-- 🧠 **Extracts** objective, hypothesis, files, errors, commands, decisions, and pending items
-- 📦 **Packs** everything into a structured handoff block in seconds
-- 🔌 **Works** as a CLI, VS Code extension, or MCP server — pick what fits your workflow
-
-```
-$ bb use claude:62003fff --mode compact
-
-## BriefBridge Handoff
-Objective: Fix JWT validation bug in the auth service.
-Hypothesis: Token expiry check uses local timezone instead of UTC.
-Files: src/auth.py (edited), tests/test_auth.py (edited)
-Errors: AssertionError: token expired — from pytest
-Pending: Add integration test for refresh tokens
-```
-
-> Paste that block at the top of your next message and you are back in context immediately.
+**Todos os clientes compartilham o mesmo backend MCP. Só a interface muda.**
 
 ---
 
-## Table of Contents
+## Por que isso existe?
 
-- [Architecture](#architecture)
-- [Installation](#installation)
-- [GitHub Copilot](#github-copilot)
+Quando você troca de ferramenta de IA no meio de uma tarefa, perde todo o contexto. Precisa re-explicar o objetivo, re-listar os arquivos alterados e re-descrever cada erro que encontrou. O BriefBridge automatiza essa transferência.
+
+- 🔍 **Lê** os arquivos de sessão locais de cada ferramenta (sem chamadas de API, nada sai da sua máquina)
+- 🧠 **Extrai** objetivo, hipótese, arquivos, erros, comandos, decisões e pendências
+- 📦 **Empacota** tudo em um bloco de handoff estruturado em segundos
+- 🔌 **Funciona** como CLI, extensão do VS Code ou servidor MCP — escolha o que faz sentido para você
+
+```
+$ bb use codex:019cdf99 --mode compact
+
+[BriefBridge Handoff — codex]
+Objective: Adicionar cadastro manual de usuários no painel admin
+Key files:
+  - src/admin/users.py
+  - src/auth/signup.py
+Errors: IntegrityError: UNIQUE constraint failed: users.email
+Pending: Testar fluxo com usuário duplicado
+```
+
+> Cole esse bloco no início da próxima mensagem e você volta ao trabalho imediatamente.
+
+---
+
+## Índice
+
+- [Como funciona](#como-funciona)
+- [Instalação](#instalação)
+- [GitHub Copilot / VS Code](#github-copilot--vs-code)
 - [Claude Code](#claude-code)
 - [Codex](#codex)
-- [CLI Reference](#cli-reference)
-- [MCP Tools Reference](#mcp-tools-reference)
-- [Development](#development)
+- [Referência da CLI](#referência-da-cli)
+- [Ferramentas MCP](#ferramentas-mcp)
+- [Desenvolvimento](#desenvolvimento)
 
 ---
 
-## Architecture
+## Como funciona
 
 ```
-+---------------------------------------------------+
-|                  bb-mcp (STDIO)                   |
-|  bb_sessions_list    bb_session_inspect           |
-|  bb_session_pack     bb_session_use               |
-|  bb_session_search                                |
-+---------------------+-----------------------------+
-                      |
-          +-----------v-----------+
-          |    briefbridge core   |
-          |  adapters / extract   |
-          |  storage / render     |
-          +-----------+-----------+
-             ^        ^        ^
-        ~/.claude/ ~/.codex/ workspaceStorage/
+┌─────────────────────────────────────────────────────┐
+│                   bb-mcp  (STDIO)                   │
+│  bb_sessions_list    bb_session_inspect             │
+│  bb_session_pack     bb_session_use                 │
+│  bb_session_search                                  │
+└──────────────────────┬──────────────────────────────┘
+                       │
+           ┌───────────▼───────────┐
+           │   núcleo briefbridge  │
+           │  adapters / extract   │
+           │  storage  / render    │
+           └───────────┬───────────┘
+              ^        ^        ^
+         ~/.claude/  ~/.codex/  %APPDATA%\Code\User\workspaceStorage\
 ```
+
+Cada ferramenta salva suas sessões localmente no disco. O BriefBridge sabe onde cada uma guarda esses arquivos e os lê diretamente — sem precisar de API, token ou conexão com a internet.
+
+| Ferramenta | Onde os dados ficam |
+|---|---|
+| **Claude Code** | `~/.claude/projects/*/` |
+| **Codex** | `~/.codex/sessions/YYYY/MM/DD/` |
+| **GitHub Copilot** | `%APPDATA%\Code\User\workspaceStorage\` (Windows) |
 
 ```
 src/briefbridge/
-+-- cli.py              # Typer CLI -- bb, briefbridge, bb-mcp
-+-- mcp_server.py       # FastMCP server -- 5 tools
-+-- config.py           # Platform-aware path detection
-+-- adapters/           # One adapter per provider
-|   +-- claude.py       # ~/.claude/ reader
-|   +-- codex.py        # ~/.codex/ reader
-|   +-- copilot.py      # workspaceStorage reader
-+-- extract/            # Pull structure from raw sessions
-|   +-- deterministic.py  # Files, errors, commands, repo
-|   +-- heuristic.py      # Objective, hypothesis, decisions, TODOs
-+-- ingest/             # Orchestrate adapter -> extract -> pack
-+-- models/             # Pydantic v2 models (HandoffPack, RawSession...)
-+-- render/             # JSON, Markdown, plain-text output
-+-- services/           # Sessions, handoff, search business logic
-+-- storage/            # SQLite FTS5 cache
-+-- wrappers/           # Per-client install helpers
-    +-- claude.py       # /bb:* slash commands
-    +-- codex.py        # $briefbridge skill
-    +-- copilot.py      # MCP config helper
+├── cli.py                # CLI Typer — bb, briefbridge, bb-mcp
+├── mcp_server.py         # Servidor FastMCP — 5 ferramentas via STDIO
+├── config.py             # Detecção de caminhos por plataforma
+├── adapters/             # Um adapter por provedor
+│   ├── claude.py         # Lê ~/.claude/
+│   ├── codex.py          # Lê ~/.codex/
+│   └── copilot.py        # Lê workspaceStorage do VS Code
+├── extract/
+│   ├── deterministic.py  # Arquivos, erros, comandos, repositório
+│   └── heuristic.py      # Objetivo, hipótese, decisões, TODOs
+├── ingest/               # Orquestra adapter -> extract -> pack
+├── models/               # Modelos Pydantic v2 (HandoffPack, RawSession...)
+├── render/               # Saída JSON, Markdown, texto simples
+├── services/             # Lógica de sessões, handoff, busca
+├── storage/              # Cache SQLite FTS5
+└── wrappers/             # Helpers de instalação por cliente
+    ├── claude.py         # Comandos slash /bb:*
+    ├── codex.py          # Skill $briefbridge
+    └── copilot.py        # Helper de config MCP
 ```
 
 ---
 
-## Installation
+## Instalação
 
-**Requirements:** Python 3.12+
+**Requisitos:** Python 3.12+
 
 ```bash
 git clone https://github.com/TiagoSchr/briefbridge.git
@@ -112,7 +120,7 @@ cd briefbridge
 pip install -e .
 ```
 
-Verify:
+Verificar se instalou:
 
 ```bash
 bb --help
@@ -121,42 +129,42 @@ bb sessions
 
 ---
 
-## GitHub Copilot
+## GitHub Copilot / VS Code
 
-BriefBridge ships a VS Code extension with the `@bb` chat participant.
+O BriefBridge inclui uma extensão para o VS Code com o participante de chat `@bb`.
 
-### Option A — VS Code Extension (recommended)
+### Opção A — Extensão do VS Code *(recomendado)*
 
-Build and install the extension from source:
+Compile e instale a extensão a partir do código-fonte:
 
 ```bash
 cd vscode-ext
 npm install
-npm run package          # produces briefbridge.vsix
+npm run package          # gera briefbridge.vsix
 code --install-extension briefbridge.vsix
 ```
 
-Restart VS Code, then use it in Copilot Chat:
+Reinicie o VS Code e use no painel de chat do Copilot:
 
 ```
 @bb /sessions
-@bb /sessions claude          # filter by provider
+@bb /sessions claude          # filtrar por provedor
 @bb /inspect <session_id>
-@bb /use <session_id>
-@bb /pack <session_id>
+@bb /use     <session_id>
+@bb /pack    <session_id>
 ```
 
-### Option B — MCP backend (experimental)
+### Opção B — Servidor MCP *(experimental)*
 
-> Requires VS Code with GitHub Copilot Chat and experimental MCP support enabled.
+> Requer VS Code com GitHub Copilot Chat e suporte experimental a MCP habilitado.
 
-**Step 1:** Run the install helper:
+**Passo 1 —** Execute o helper de instalação:
 
 ```bash
 bb wrapper install --client copilot
 ```
 
-This writes the correct block to your VS Code `settings.json`:
+Isso escreve automaticamente o bloco correto no `settings.json` do VS Code:
 
 ```json
 {
@@ -172,138 +180,138 @@ This writes the correct block to your VS Code `settings.json`:
 }
 ```
 
-**Step 2:** Restart VS Code. Copilot Chat will now have access to all 5 BriefBridge tools.
+**Passo 2 —** Reinicie o VS Code. O Copilot Chat terá acesso a todas as 5 ferramentas do BriefBridge.
 
 ---
 
 ## Claude Code
 
-### Step 1 — Install slash commands
+### Passo 1 — Instalar os comandos slash
 
 ```bash
 bb wrapper install --client claude
 ```
 
-This creates `~/.claude/commands/bb/sessions.md`, `inspect.md`, `pack.md`, `use.md`, `search.md`.
+Isso cria `~/.claude/commands/bb/` com os arquivos `sessions.md`, `inspect.md`, `pack.md`, `use.md` e `search.md`.
 
-Restart Claude Code and use:
+Reinicie o Claude Code e use:
 
 ```
 /bb:sessions
 /bb:inspect <session_id>
 /bb:pack    <session_id>
 /bb:use     <session_id>
-/bb:search  <query>
+/bb:search  <consulta>
 ```
 
-### Step 2 — Add MCP server (optional but recommended)
+### Passo 2 — Adicionar o servidor MCP *(opcional, mas recomendado)*
 
-Add to `~/.claude.json`:
+Adicione em `~/.claude.json` (ou nas configurações do projeto em `.claude/settings.json`):
 
 ```json
 {
   "mcpServers": {
     "briefbridge": {
       "command": "bb-mcp",
-      "args": [],
-      "env": {}
+      "args": []
     }
   }
 }
 ```
 
-When MCP is configured, Claude Code calls the tools directly — no shell commands needed.
+Com o MCP configurado, o Claude Code chama as ferramentas diretamente sem precisar executar comandos shell.
 
 ---
 
 ## Codex
 
-### Step 1 — Install the skill
+### Passo 1 — Instalar a skill
 
 ```bash
 bb wrapper install --client codex
 ```
 
-This creates the `briefbridge` skill at `~/.agents/skills/briefbridge/SKILL.md`.
+Isso cria a skill `briefbridge` em `~/.agents/skills/briefbridge/SKILL.md`.
 
-Restart Codex. Type `$briefbridge` in the composer to activate it, or ask about sessions naturally — Codex will activate the skill automatically.
+Reinicie o Codex. Digite `$briefbridge` no compositor para ativá-la, ou pergunte sobre sessões naturalmente — o Codex ativará a skill automaticamente.
 
-### Step 2 — Add MCP server (optional but recommended)
+### Passo 2 — Adicionar o servidor MCP *(opcional, mas recomendado)*
 
-Add to `~/.codex/config.toml`:
+Adicione em `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.briefbridge]
 command = "bb-mcp"
-args = []
+args    = []
 ```
 
-When MCP is configured, Codex calls the tools directly instead of running shell commands.
+Com o MCP configurado, o Codex chama as ferramentas diretamente em vez de executar comandos shell.
 
 ---
 
-## CLI Reference
+## Referência da CLI
 
 ```bash
-# List sessions
-bb sessions                        # all recent sessions
-bb sessions --last 24h             # last 24 hours
-bb sessions --last 7d              # last 7 days
-bb sessions --provider claude      # filter: copilot | claude | codex
-bb sessions --repo auto            # filter by current git repo
-bb sessions --json                 # JSON output
+# Listar sessões
+bb sessions                           # todas as sessões recentes
+bb sessions --last 24h                # últimas 24 horas
+bb sessions --last 7d                 # últimos 7 dias
+bb sessions --provider claude         # filtro: copilot | claude | codex
+bb sessions --repo auto               # filtrar pelo repositório git atual
+bb sessions --json                    # saída JSON
 
-# Inspect
+# Inspecionar uma sessão
 bb inspect <session_id>
 bb inspect <session_id> --json
 
-# Handoff pack
+# Gerar pacote de handoff
 bb pack <session_id>
 bb pack <session_id> --json
 
-# Paste-ready context block
-bb use <session_id>                        # compact (default)
-bb use <session_id> --mode full            # everything
-bb use <session_id> --mode goal,files,errors  # combine sections
+# Bloco de contexto pronto para colar
+bb use <session_id>                           # compacto (padrão)
+bb use <session_id> --mode full               # tudo
+bb use <session_id> --mode goal,files,errors  # combinar seções
 
-# Export to file
+# Exportar para arquivo
 bb export <session_id> --format json
 bb export <session_id> --format md
 
-# Search within a session
-bb ask <session_id> "what errors did we hit?"
+# Buscar dentro de sessões
+bb ask <session_id> "quais erros encontramos?"
 
-# Install wrappers
-bb wrapper install                 # all clients
+# Instalar wrappers
+bb wrapper install                    # todos os clientes
 bb wrapper install --client claude
 bb wrapper install --client codex
 bb wrapper install --client copilot
 
-# MCP server
-bb-mcp                             # start STDIO MCP server
-bb mcp                             # same, via bb CLI
+# Iniciar servidor MCP
+bb-mcp
+bb mcp                                # mesmo, via CLI bb
 ```
 
-### Context modes for `bb use`
+### Modos de contexto para `bb use`
 
-| Mode | What you get |
-|------|-------------|
-| `summary` | One-paragraph overview |
-| `goal` | Objective only |
-| `hypothesis` | Main hypothesis only |
-| `files` | Files touched with inferred roles |
-| `errors` | Errors with excerpts |
-| `commands` | Commands run with exit codes |
-| `decisions` | Decisions made with confidence |
-| `todos` | Pending items with priority |
-| `compact` | goal + hypothesis + top files + errors + todos **(default)** |
-| `full` | Everything |
+| Modo | O que você recebe |
+|---|---|
+| `summary` | Resumo em um parágrafo |
+| `goal` | Só o objetivo |
+| `hypothesis` | Só a hipótese principal |
+| `files` | Arquivos alterados com funções inferidas |
+| `errors` | Erros com trechos do log |
+| `commands` | Comandos executados com códigos de saída |
+| `decisions` | Decisões tomadas com nível de confiança |
+| `todos` | Pendências com prioridade |
+| `compact` | objetivo + hipótese + top arquivos + erros + pendências *(padrão)* |
+| `full` | Tudo |
 
 ---
 
-## MCP Tools Reference
+## Ferramentas MCP
 
-BriefBridge exposes 5 tools over the MCP protocol (STDIO transport). Register `bb-mcp` as an MCP server in any MCP-compatible client.
+O BriefBridge expõe **5 ferramentas** via protocolo MCP (transporte STDIO).
+Registre `bb-mcp` como servidor MCP em qualquer cliente compatível.
 
 ### `bb_sessions_list`
 
@@ -315,7 +323,7 @@ Output: { "sessions": [{ "id", "provider", "time", "repo", "files_count", "title
 ### `bb_session_inspect`
 
 ```json
-Input:  { "session_id": "copilot:abc123" }
+Input:  { "session_id": "codex:019cdf99" }
 Output: { "id", "provider", "repo", "branch", "objective", "main_hypothesis",
           "relevant_files", "errors_found", "important_commands",
           "decisions_made", "pending_items" }
@@ -332,54 +340,57 @@ Output: { "handoff_id", "markdown", "plain_text", "json": { ... } }
 
 ```json
 Input:  { "session_id": "...", "mode": "compact" }
-Output: { "context_block": "ready-to-paste string" }
+Output: { "context_block": "string pronta para colar" }
 ```
 
 ### `bb_session_search`
 
 ```json
-Input:  { "query": "JWT bug", "hours": 72, "provider": "any", "repo": null }
+Input:  { "query": "bug no login", "hours": 72, "provider": "any", "repo": null }
 Output: { "matches": [{ "session_id", "provider", "score", "snippet" }] }
 ```
 
 ---
 
-## Development
+## Desenvolvimento
 
 ```bash
 pip install -e ".[dev]"
 
-# Run all tests
+# Rodar todos os testes
 pytest tests/ -v
 
-# Run MCP-specific tests
+# Testes do servidor MCP
 pytest tests/test_mcp_server.py -v
+
+# Testes dos wrappers
+pytest tests/test_wrappers/ -v
 ```
 
-### Project conventions
+### Convenções do projeto
 
-- Python 3.12+, Pydantic v2, Typer, Rich, FastMCP (`mcp` SDK)
-- No external API calls — everything is local file parsing
-- Adapters return empty / best-effort results when provider data is missing
-- All terminal output uses `sys.stdout.buffer` with explicit UTF-8 encoding for Windows compatibility
+- Python 3.12+, Pydantic v2, Typer, Rich, FastMCP (SDK `mcp`)
+- Sem chamadas a APIs externas — tudo é leitura de arquivos locais
+- Adapters retornam resultados vazios/parciais quando dados do provedor não existem
+- Todo output no terminal usa `sys.stdout.buffer` com UTF-8 explícito para compatibilidade no Windows
 
-### Adding a new provider
+### Adicionando um novo provedor
 
-1. Add an adapter in `src/briefbridge/adapters/<provider>.py` implementing `BaseAdapter`
-2. Register it in `src/briefbridge/adapters/registry.py`
-3. Add fixtures in `tests/fixtures/<provider>/`
-4. Add adapter tests in `tests/test_adapters/test_<provider>.py`
+1. Crie um adapter em `src/briefbridge/adapters/<provedor>.py` implementando `BaseAdapter`
+2. Registre em `src/briefbridge/adapters/registry.py`
+3. Adicione fixtures em `tests/fixtures/<provedor>/`
+4. Adicione testes em `tests/test_adapters/test_<provedor>.py`
 
 ---
 
-## License
+## Licença
 
-MIT — see [LICENSE](LICENSE).
+MIT — veja [LICENSE](LICENSE).
 
 ---
 
 <div align="center">
 
-Made with ☕ by [TiagoSchr](https://github.com/TiagoSchr)
+Feito com ☕ por [TiagoSchr](https://github.com/TiagoSchr)
 
 </div>
