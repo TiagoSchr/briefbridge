@@ -206,7 +206,7 @@ class ClaudeAdapter(BaseAdapter):
                                 )
 
             elif entry_type == "ai-title":
-                title = entry.get("title", title)
+                title = entry.get("aiTitle", entry.get("title", title))
 
             elif entry_type == "tool_result":
                 # Some Claude sessions include tool_result entries
@@ -290,7 +290,7 @@ class ClaudeAdapter(BaseAdapter):
                     entry = json.loads(raw)
                     etype = entry.get("type", "")
                     if etype == "ai-title":
-                        title = entry.get("title")
+                        title = entry.get("aiTitle", entry.get("title"))
                     if etype == "user" and ts is None:
                         ts = _parse_ts(entry.get("timestamp"))
                         branch = branch or entry.get("gitBranch")
