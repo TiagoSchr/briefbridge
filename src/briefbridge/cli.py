@@ -256,7 +256,7 @@ def pack(
         _print_json(render_json(result))
         return
 
-    console.print(f"\n[bold green]✓ Handoff pack generated[/bold green]")
+    console.print(f"\n[bold green]Handoff pack generated[/bold green]")
     console.print(f"  [bold]ID:[/bold] {result.handoff_id}")
     console.print(f"  [bold]Provider:[/bold] {result.source_provider}")
     console.print(f"  [bold]Session:[/bold] {result.source_session_id}")
@@ -306,7 +306,7 @@ def use(
         raise typer.Exit(1)
 
     # Print raw to stdout (no rich formatting — designed for piping)
-    sys.stdout.write(output + "\n")
+    sys.stdout.buffer.write((output + "\n").encode("utf-8"))
 
 
 # ------------------------------------------------------------------
@@ -388,7 +388,7 @@ def wrapper(
             console.print(f"\n[bold]Claude Code[/bold] ({action}):")
             if action == "install":
                 claude_install()
-                console.print("[green]→ Add the MCP server to Claude Code settings:[/green]")
+                console.print("[green]Add the MCP server to Claude Code settings:[/green]")
                 from briefbridge.wrappers.claude import print_mcp_config
                 print_mcp_config()
             else:
@@ -408,7 +408,7 @@ def wrapper(
             console.print(f"\n[bold]GitHub Copilot[/bold] ({action}):")
             if action == "install":
                 from briefbridge.wrappers.copilot import print_vscode_settings
-                console.print("[green]→ Add to VS Code settings.json:[/green]")
+                console.print("[green]Add to VS Code settings.json:[/green]")
                 print_vscode_settings()
             else:
                 console.print("[yellow]Nothing to uninstall — remove the MCP block from settings.json manually.[/yellow]")

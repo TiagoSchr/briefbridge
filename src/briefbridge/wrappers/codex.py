@@ -136,14 +136,14 @@ def install(skills_dir: Path | None = None, verbose: bool = True) -> list[Path]:
     skill_md.write_text(_build_skill_md(bb_cmd), encoding="utf-8")
     installed.append(skill_md)
     if verbose:
-        print(f"  ✓ {skill_md}")
+        print(f"  ok {skill_md}")
         print(f"    bb command: {bb_cmd}")
 
     openai_yaml = agents_dir / "openai.yaml"
     openai_yaml.write_text(_OPENAI_YAML, encoding="utf-8")
     installed.append(openai_yaml)
     if verbose:
-        print(f"  ✓ {openai_yaml}")
+        print(f"  ok {openai_yaml}")
 
     if verbose:
         print(f"\n  Invoke in Codex by typing: $briefbridge")
@@ -162,7 +162,7 @@ def uninstall(skills_dir: Path | None = None, verbose: bool = True) -> None:
     if skill_dir.exists():
         shutil.rmtree(skill_dir)
         if verbose:
-            print(f"  ✗ removed {skill_dir}")
+            print(f"  removed {skill_dir}")
     elif verbose:
         print(f"  (nothing to remove — {skill_dir} not found)")
 

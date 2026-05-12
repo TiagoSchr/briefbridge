@@ -128,17 +128,23 @@ O BriefBridge inclui uma extensão do VS Code com o participante de chat `@bb`.
 
 ### Opção A — Extensão do VS Code *(recomendado)*
 
+Compile e instale a extensão a partir do código-fonte:
+
 ```bash
-code --install-extension vscode-ext/briefbridge.vsix
+cd vscode-ext
+npm install
+npm run package          # gera briefbridge.vsix
+code --install-extension briefbridge.vsix
 ```
 
-Use no Copilot Chat:
+Reinicie o VS Code e use no Copilot Chat:
 
 ```
 @bb /sessions
-@bb /inspect copilot:abc123
-@bb /use     copilot:abc123
-@bb /pack    copilot:abc123
+@bb /sessions claude          # filtrar por provedor
+@bb /inspect <session_id>
+@bb /use     <session_id>
+@bb /pack    <session_id>
 ```
 
 ### Opção B — Backend MCP *(experimental)*
@@ -359,7 +365,7 @@ pytest tests/test_wrappers/ -v
 - Python 3.12+, Pydantic v2, Typer, Rich, FastMCP (SDK `mcp`)
 - Sem chamadas a APIs externas — tudo é leitura de arquivos locais
 - Adapters retornam resultados vazios/parciais quando dados do provedor não existem
-- Saída JSON usa `sys.stdout.buffer` para compatibilidade UTF-8 no Windows
+- Todo output no terminal usa `sys.stdout.buffer` com UTF-8 explícito para compatibilidade no Windows
 
 ### Adicionando um novo provedor
 

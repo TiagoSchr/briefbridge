@@ -135,7 +135,7 @@ def install(commands_dir: Path | None = None, verbose: bool = True) -> list[Path
         path.write_text(content, encoding="utf-8")
         installed.append(path)
         if verbose:
-            print(f"  ✓ {path}  →  /{name}")
+            print(f"  ok {path}  ->  /{name}")
 
     return installed
 
@@ -148,7 +148,7 @@ def uninstall(commands_dir: Path | None = None, verbose: bool = True) -> None:
     if target.exists():
         shutil.rmtree(target)
         if verbose:
-            print(f"  ✗ removed {target}")
+            print(f"  removed {target}")
 
 
 def list_commands() -> list[str]:
