@@ -86,6 +86,12 @@ Output the context block exactly as returned — it is designed to be copied and
 If no session ID was provided, first run `bb sessions --json --last 24h` and let the user pick one.
 """,
     },
+    "bb:context": {
+        "description": "Injeta o contexto da sessão mais recente direto no chat, sem gastar tokens.",
+        "prompt": """\
+!bb use $(bb sessions --json --last 48h 2>/dev/null | python -c "import json,sys; s=json.load(sys.stdin); print(s[0]['id'] if s else '')" 2>/dev/null) --mode compact 2>/dev/null
+""",
+    },
     "bb:search": {
         "description": "Search across BriefBridge sessions for a keyword or topic.",
         "prompt": """\

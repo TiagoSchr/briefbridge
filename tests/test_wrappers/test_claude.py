@@ -2,7 +2,8 @@
 
 Validates that install/uninstall create and remove the correct files under
 ~/.claude/commands/bb/ using a tmp_path so the real filesystem is never touched.
-The expected slash commands are /bb:sessions, /bb:inspect, /bb:pack, /bb:use, /bb:search.
+The expected slash commands are /bb:sessions, /bb:inspect, /bb:pack, /bb:use,
+/bb:search, /bb:context.
 """
 
 from __future__ import annotations
@@ -13,8 +14,8 @@ import pytest
 
 from briefbridge.wrappers import claude as claude_wrapper
 
-_EXPECTED_COMMANDS = ["bb:sessions", "bb:inspect", "bb:pack", "bb:use", "bb:search"]
-_EXPECTED_FILES = ["sessions.md", "inspect.md", "pack.md", "use.md", "search.md"]
+_EXPECTED_COMMANDS = ["bb:sessions", "bb:inspect", "bb:pack", "bb:use", "bb:search", "bb:context"]
+_EXPECTED_FILES = ["sessions.md", "inspect.md", "pack.md", "use.md", "search.md", "context.md"]
 
 
 class TestListCommands:
