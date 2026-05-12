@@ -96,6 +96,6 @@ def install_mcp_config(settings_path: Path | None = None, verbose: bool = True) 
     settings_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
 
     if verbose:
-        print(f"  ✓ MCP config added to {settings_path}")
+        print(f"  ok MCP config added to {settings_path}")
 
     return settings_path
