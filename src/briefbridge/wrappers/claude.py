@@ -18,18 +18,9 @@ from pathlib import Path
 # Claude Code reads custom commands from ~/.claude/commands/*.md
 _COMMANDS: dict[str, dict] = {
     "bb:sessions": {
-        "description": "List recent coding sessions from all providers via BriefBridge.",
+        "description": "Lista sessões recentes de todas as ferramentas. Uso: /bb:sessions [codex|claude|copilot]",
         "prompt": """\
-List recent coding sessions using BriefBridge.
-
-Run: `bb sessions --json --last $HOURS $PROVIDER_FLAG`
-
-Arguments you can pass:
-- `--last <time>` e.g. 24h, 7d (default: 24h)
-- `--provider <name>` one of: copilot, claude, codex (default: all)
-- `--repo auto` to filter by current git repo
-
-Show the results in a readable table with columns: provider, title, started, repo.
+!bb sessions --last 7d $ARGUMENTS 2>/dev/null
 """,
     },
     "bb:inspect": {
@@ -71,19 +62,9 @@ If no session ID was provided, first run `bb sessions --json --last 24h` and let
 """,
     },
     "bb:use": {
-        "description": "Generate a paste-ready context block from a BriefBridge session.",
+        "description": "Injeta o contexto de uma sessão específica direto no chat. Uso: /bb:use <session_id>",
         "prompt": """\
-Generate a paste-ready context block from a BriefBridge session.
-
-Run: `bb use $SESSION_ID --mode compact`
-
-Available modes (can be comma-separated): summary, goal, hypothesis, files, errors, commands, decisions, todos, compact, full
-
-Default mode: compact
-
-Output the context block exactly as returned — it is designed to be copied and pasted into another agent.
-
-If no session ID was provided, first run `bb sessions --json --last 24h` and let the user pick one.
+!bb use $ARGUMENTS --mode compact 2>/dev/null || echo "Uso: /bb:use <session_id>  |  Exemplo: /bb:use claude:abc123  |  Liste as sessoes com /bb:sessions"
 """,
     },
     "bb:context": {
